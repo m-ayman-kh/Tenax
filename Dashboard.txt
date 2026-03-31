@@ -1,0 +1,651 @@
+<!-- DASHBOARD FRAGMENT -->
+<style>
+  .dashboard-container {
+    padding: 15px;
+  }
+  
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+  
+  @media (min-width: 768px) {
+    .stats-grid {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+  }
+  
+  .stat-card {
+    background: rgba(255,255,255,0.95);
+    padding: 15px 10px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  
+  @media (min-width: 768px) {
+    .stat-card {
+      padding: 20px;
+      border-radius: 16px;
+    }
+  }
+  
+  .stat-value {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+    word-break: break-all;
+  }
+  
+  @media (min-width: 768px) {
+    .stat-value {
+      font-size: 20px;
+    }
+  }
+  
+  .stat-label {
+    font-size: 9px;
+    color: #666;
+    text-transform: uppercase;
+    margin-top: 4px;
+    font-weight: 600;
+  }
+  
+  @media (min-width: 768px) {
+    .stat-label {
+      font-size: 11px;
+      margin-top: 5px;
+    }
+  }
+  
+  .section {
+    background: white;
+    border-radius: 16px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  
+  @media (min-width: 768px) {
+    .section {
+      padding: 25px;
+      margin-bottom: 20px;
+      border-radius: 20px;
+    }
+  }
+  
+  .section h2 {
+    color: #333;
+    margin-bottom: 15px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  @media (min-width: 768px) {
+    .section h2 {
+      font-size: 20px;
+      margin-bottom: 20px;
+    }
+  }
+  
+  .matrix-wrapper {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .matrix-fixed {
+    flex-shrink: 0;
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background: white;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+  }
+  
+  .matrix-scroll {
+    flex: 1;
+    overflow-x: auto;
+  }
+  
+  .matrix-table {
+    border-collapse: collapse;
+    font-size: 10px;
+  }
+  
+  @media (min-width: 768px) {
+    .matrix-table {
+      font-size: 11px;
+    }
+  }
+  
+  .matrix-table th {
+    background: #fa709a;
+    color: white;
+    padding: 6px 3px;
+    text-align: center;
+    font-size: 9px;
+    min-width: 42px;
+    height: 30px;
+    font-weight: 600;
+  }
+  
+  @media (min-width: 768px) {
+    .matrix-table th {
+      padding: 8px 4px;
+      font-size: 10px;
+      min-width: 50px;
+      height: 35px;
+    }
+  }
+  
+  .matrix-fixed .matrix-table th {
+    background: #764ba2;
+    min-width: 45px;
+  }
+  
+  @media (min-width: 768px) {
+    .matrix-fixed .matrix-table th {
+      min-width: 60px;
+    }
+  }
+  
+  .matrix-table td {
+    padding: 4px 2px;
+    text-align: center;
+    border: 1px solid #e0e0e0;
+    height: 28px;
+  }
+  
+  @media (min-width: 768px) {
+    .matrix-table td {
+      padding: 6px 4px;
+      height: 32px;
+    }
+  }
+  
+  .matrix-table td:first-child {
+    font-weight: 600;
+    background: #f5f5f5;
+  }
+  
+  .matrix-fixed .matrix-table td {
+    background: #f5f5f5;
+    font-weight: 600;
+  }
+  
+  .paid {
+    background: #c8e6c9 !important;
+    color: #2e7d32;
+    font-weight: bold;
+  }
+  
+  .unpaid {
+    background: #ffcdd2 !important;
+    color: #c62828;
+  }
+  
+  .matrix-legend {
+    display: flex;
+    gap: 15px;
+    margin-top: 12px;
+    font-size: 12px;
+    justify-content: center;
+  }
+  
+  @media (min-width: 768px) {
+    .matrix-legend {
+      gap: 20px;
+      margin-top: 15px;
+      font-size: 13px;
+    }
+  }
+  
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  .legend-box {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+  }
+  
+  @media (min-width: 768px) {
+    .legend-box {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+    }
+  }
+  
+  .legend-paid {
+    background: #c8e6c9;
+  }
+  
+  .legend-unpaid {
+    background: #ffcdd2;
+  }
+  
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+  
+  @media (min-width: 768px) {
+    table {
+      font-size: 12px;
+    }
+  }
+  
+  th {
+    background: #f5f5f5;
+    padding: 8px 6px;
+    text-align: left;
+    font-weight: 600;
+    color: #666;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    font-size: 10px;
+  }
+  
+  @media (min-width: 768px) {
+    th {
+      padding: 10px;
+      font-size: 11px;
+    }
+  }
+  
+  td {
+    padding: 6px;
+    border-bottom: 1px solid #f0f0f0;
+    white-space: nowrap;
+  }
+  
+  @media (min-width: 768px) {
+    td {
+      padding: 8px 10px;
+    }
+  }
+  
+  tr:hover {
+    background: #fafafa;
+  }
+  
+  .amount {
+    font-weight: 600;
+    color: #333;
+  }
+  
+  .expense-amount {
+    color: #f5576c;
+  }
+  
+  .revenue-amount {
+    color: #43e97b;
+  }
+  
+  .badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 9px;
+    font-weight: 500;
+  }
+  
+  @media (min-width: 768px) {
+    .badge {
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 10px;
+    }
+  }
+  
+  .badge-expense {
+    background: #ffebee;
+    color: #c62828;
+  }
+  
+  .badge-revenue {
+    background: #e8f5e9;
+    color: #2e7d32;
+  }
+  
+  .attachment-link {
+    color: #667eea;
+    text-decoration: none;
+    font-size: 10px;
+  }
+  
+  @media (min-width: 768px) {
+    .attachment-link {
+      font-size: 11px;
+    }
+  }
+  
+  .attachment-link:hover {
+    text-decoration: underline;
+  }
+</style>
+
+<div class="dashboard-container">
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value" id="beginningBalance">0</div>
+      <div class="stat-label">Beginning Balance</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="totalRevenue">0</div>
+      <div class="stat-label">Total Revenue</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="totalExpenses">0</div>
+      <div class="stat-label">Total Expenses</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="currentBalance">0</div>
+      <div class="stat-label">Current Balance</div>
+    </div>
+  </div>
+  
+  <div class="section">
+    <h2>💰 Monthly Debt Payment Matrix</h2>
+    <p style="color: #666; font-size: 12px; margin-bottom: 12px; margin-top: -10px;">Green = Paid, Red = Unpaid</p>
+    <div class="matrix-wrapper" id="matrixContainer">
+      <div style="text-align: center; padding: 40px; color: #999;">Loading matrix...</div>
+    </div>
+    <div class="matrix-legend">
+      <div class="legend-item">
+        <div class="legend-box legend-paid"></div>
+        <span>Paid</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-box legend-unpaid"></div>
+        <span>Unpaid</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="section">
+    <h2>📋 Recent Transactions</h2>
+    <div class="table-container" id="transactionsTable">
+      <div style="text-align: center; padding: 40px; color: #999;">Loading...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function() {
+    const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    function convertYyMmmToMmmYy(monthStr) {
+      if (!monthStr) return '-';
+      if (/^[A-Za-z]{3}-\d{2}$/.test(monthStr)) return monthStr;
+      if (/^\d{2}-[A-Za-z]{3}$/.test(monthStr)) {
+        const parts = monthStr.split('-');
+        return parts[1] + '-' + parts[0];
+      }
+      return monthStr;
+    }
+    
+    function loadDashboardData() {
+      google.script.run
+        .withSuccessHandler(function(data) {
+          renderDashboard(JSON.parse(data));
+        })
+        .withFailureHandler(function(error) {
+          document.getElementById('matrixContainer').innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">Error loading data</div>';
+          document.getElementById('transactionsTable').innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">Error loading data</div>';
+        })
+        .getDashboardData();
+    }
+    
+    function renderDashboard(data) {
+      if (data.error) {
+        console.error('Server error:', data.error);
+      }
+      
+      document.getElementById('beginningBalance').textContent = formatCurrency(data.beginningBalance);
+      document.getElementById('totalRevenue').textContent = formatCurrency(data.revenueTotal);
+      document.getElementById('totalExpenses').textContent = formatCurrency(data.expenseTotal);
+      document.getElementById('currentBalance').textContent = formatCurrency(data.currentBalance);
+      
+      const net = parseFloat(data.currentBalance);
+      document.getElementById('currentBalance').style.color = net >= 0 ? '#43e97b' : '#f5576c';
+      
+      renderMatrix(data.matrixData);
+      renderTransactions(data.transactions);
+    }
+    
+    function renderMatrix(matrixData) {
+      if (!matrixData || !matrixData.months || matrixData.months.length === 0) {
+        document.getElementById('matrixContainer').innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">No matrix data available</div>';
+        return;
+      }
+      
+      const months = matrixData.months;
+      const tenants = matrixData.tenants;
+      const payments = matrixData.payments;
+      
+      let html = '<div class="matrix-fixed"><table class="matrix-table"><thead><tr><th>Tenant</th></tr></thead><tbody>';
+      
+      tenants.forEach(function(tenant) {
+        html += '<tr><td>' + tenant + '</td></tr>';
+      });
+      
+      html += '</tbody></table></div>';
+      
+      html += '<div class="matrix-scroll"><table class="matrix-table"><thead><tr>';
+      
+      months.forEach(function(month) {
+        const displayMonth = convertYyMmmToMmmYy(month);
+        html += '<th>' + displayMonth + '</th>';
+      });
+      
+      html += '</tr></thead><tbody>';
+      
+      tenants.forEach(function(tenant) {
+        html += '<tr>';
+        months.forEach(function(month) {
+          const key = tenant + '|' + month;
+          const status = payments[key] || 'unpaid';
+          const cellClass = status === 'paid' ? 'paid' : 'unpaid';
+          const cellContent = status === 'paid' ? '✓' : '✗';
+          
+          html += '<td class="' + cellClass + '">' + cellContent + '</td>';
+        });
+        html += '</tr>';
+      });
+      
+      html += '</tbody></table></div>';
+      
+      document.getElementById('matrixContainer').innerHTML = html;
+    }
+    
+        function renderTransactions(transactions) {
+      if (!transactions || transactions.length === 0) {
+        document.getElementById('transactionsTable').innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">No transactions found</div>';
+        return;
+      }
+      
+      let html = '<table><thead><tr>' +
+        '<th>Type</th>' +
+        '<th>Date</th>' +
+        '<th>Category</th>' +
+        '<th>SubCategory</th>' +
+        '<th>Month</th>' +
+        '<th>Tenant</th>' +
+        '<th>Amount</th>' +
+        '<th>Note</th>' +
+        '<th>Attachment</th>' +
+        '</tr></thead><tbody>';
+      
+      transactions.slice(0, 50).forEach(function(row) {
+        // Column indices: 0=Timestamp, 1=Type, 2=Date, 3=Category, 4=SubCategory, 5=Month, 6=Tenant, 7=Amount, 8=Note, 9=Attachment
+        const type = row[1];
+        const date = row[2];
+        const category = row[3];
+        const subCategory = row[4];
+        const monthRaw = row[5];
+        const tenant = row[6];
+        const amount = row[7];
+        const note = row[8];
+        const attachment = row[9];
+        
+        const isExpense = type === 'Expense';
+        const amountClass = isExpense ? 'expense-amount' : 'revenue-amount';
+        const badgeClass = isExpense ? 'badge-expense' : 'badge-revenue';
+        
+        // Format month to mmm-yy
+        let monthStr = formatMonthToMmmYy(monthRaw);
+        
+        html += '<tr>';
+        html += '<td><span class="badge ' + badgeClass + '">' + (type || '-') + '</span></td>';
+        html += '<td>' + formatDate(date) + '</td>';
+        html += '<td>' + (category || '-') + '</td>';
+        html += '<td>' + (subCategory || '-') + '</td>';
+        html += '<td>' + monthStr + '</td>';
+        html += '<td>' + (tenant || '-') + '</td>';
+        html += '<td class="amount ' + amountClass + '">' + formatAmount(amount) + '</td>';
+        html += '<td>' + (note || '-') + '</td>';
+        
+        // Attachment as clickable link(s)
+        if (attachment && attachment.toString().trim()) {
+          const urls = attachment.toString().split(',').map(u => u.trim()).filter(u => u);
+          if (urls.length > 0) {
+            html += '<td>';
+            urls.forEach(function(url, idx) {
+              html += '<a href="' + url + '" target="_blank" class="attachment-link">Link ' + (idx + 1) + '</a>';
+              if (idx < urls.length - 1) html += ', ';
+            });
+            html += '</td>';
+          } else {
+            html += '<td>-</td>';
+          }
+        } else {
+          html += '<td>-</td>';
+        }
+        
+        html += '</tr>';
+      });
+      
+      html += '</tbody></table>';
+      document.getElementById('transactionsTable').innerHTML = html;
+    }
+    
+    function formatMonthToMmmYy(monthRaw) {
+      if (!monthRaw) return '-';
+      
+      // If already in mmm-yy format
+      if (typeof monthRaw === 'string' && /^[A-Za-z]{3}-\d{2}$/.test(monthRaw)) {
+        return monthRaw;
+      }
+      
+      // If in yy-mmm format, convert to mmm-yy
+      if (typeof monthRaw === 'string' && /^\d{2}-[A-Za-z]{3}$/.test(monthRaw)) {
+        const parts = monthRaw.split('-');
+        return parts[1] + '-' + parts[0];
+      }
+      
+      // If it's a Date object
+      if (monthRaw instanceof Date) {
+        const mm = MONTH_NAMES[monthRaw.getMonth()];
+        const yy = String(monthRaw.getFullYear()).slice(-2);
+        return mm + '-' + yy;
+      }
+      
+      // If it's mm-yy format
+      if (typeof monthRaw === 'string' && /^\d{2}-\d{2}$/.test(monthRaw)) {
+        const parts = monthRaw.split('-');
+        const mm = MONTH_NAMES[parseInt(parts[0]) - 1];
+        const yy = parts[1];
+        return mm + '-' + yy;
+      }
+      
+      // If it's an ISO date string
+      if (typeof monthRaw === 'string' && monthRaw.includes('T')) {
+        const d = new Date(monthRaw);
+        if (!isNaN(d.getTime())) {
+          const mm = MONTH_NAMES[d.getMonth()];
+          const yy = String(d.getFullYear()).slice(-2);
+          return mm + '-' + yy;
+        }
+      }
+      
+      // If it's a string like "11/24/2026"
+      if (typeof monthRaw === 'string' && monthRaw.includes('/')) {
+        const parts = monthRaw.split('/');
+        if (parts.length === 3) {
+          const mm = MONTH_NAMES[parseInt(parts[0]) - 1];
+          const yy = parts[2].slice(-2);
+          return mm + '-' + yy;
+        }
+      }
+      
+      return String(monthRaw);
+    }
+    
+    function formatCurrency(value) {
+      const num = parseFloat(value);
+      if (isNaN(num)) return 'EGP 0';
+      if (num >= 1000) return 'EGP ' + (num/1000).toFixed(1) + 'K';
+      return 'EGP ' + num.toFixed(0);
+    }
+    
+    function formatAmount(value) {
+      const num = parseFloat(value);
+      if (isNaN(num)) return 'EGP 0';
+      const absVal = Math.abs(num);
+      if (absVal >= 1000) {
+        const prefix = num < 0 ? '-' : '';
+        return prefix + 'EGP ' + (absVal/1000).toFixed(1) + 'K';
+      }
+      const prefix = num < 0 ? '-' : '';
+      return prefix + 'EGP ' + absVal.toFixed(0);
+    }
+    
+    function formatDate(dateVal) {
+      if (!dateVal) return '-';
+      if (typeof dateVal === 'string' && dateVal.indexOf('/') > -1) {
+        // Return short format for mobile
+        const parts = dateVal.split('/');
+        if (parts.length === 3) {
+          return parts[0] + '/' + parts[1];
+        }
+        return dateVal;
+      }
+      
+      try {
+        const date = new Date(dateVal);
+        if (isNaN(date.getTime())) return String(dateVal);
+        
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        
+        return day + '/' + month;
+      } catch(e) {
+        return String(dateVal);
+      }
+    }
+    
+    loadDashboardData();
+  })();
+</script>
