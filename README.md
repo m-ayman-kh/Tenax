@@ -1,6 +1,6 @@
 # 🏢 PropertyFlow
 
-A full-stack **Building Finance Tracker** built entirely on **Google Apps Script**, designed to manage expenses, revenue, and tenant payments for a residential building with 20 units.
+A full-stack **Finance Tracker** built entirely on **Google Apps Script**, designed to manage expenses, revenue, and tenant payments for a residential buildings.
 
 ---
 
