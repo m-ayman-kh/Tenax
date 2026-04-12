@@ -427,8 +427,7 @@ function formatDateCairo(dateString) {
   return parts[1] + '/' + parts[2] + '/' + parts[0];
 }
 
-// Parse month string to Date object (first day of month)
-// Storing as a Date ensures chronological sorting in pivots and filters
+// Parse month string to Date object set to first day of month
 function parseMonthToFirstDay(monthStr) {
   if (!monthStr) return null;
   
@@ -436,19 +435,19 @@ function parseMonthToFirstDay(monthStr) {
   let monthIndex = -1;
   let year = 2026;
   
-  // yy-mmm format (e.g., "26-Apr")
+  // yy-mmm format (e.g., "26-Feb")
   if (/^\d{2}-[A-Za-z]{3}$/.test(monthStr)) {
     const parts = monthStr.split('-');
     year = 2000 + parseInt(parts[0]);
     monthIndex = monthNames.indexOf(parts[1]);
   }
-  // mmm-yy format (e.g., "Apr-26")
+  // mmm-yy format (e.g., "Feb-26")
   else if (/^[A-Za-z]{3}-\d{2}$/.test(monthStr)) {
     const parts = monthStr.split('-');
     monthIndex = monthNames.indexOf(parts[0]);
     year = 2000 + parseInt(parts[1]);
   }
-  // mm-yy format (e.g., "04-26")
+  // mm-yy format (e.g., "02-26")
   else if (/^\d{2}-\d{2}$/.test(monthStr)) {
     const parts = monthStr.split('-');
     monthIndex = parseInt(parts[0]) - 1;
@@ -501,12 +500,14 @@ function submitExpense(data) {
       attachmentUrls = result.links;
       attachmentErrors = result.errors;
     }
+    // Pipe-separated so dashboard can split and display as individual links
+    const attachmentString = attachmentUrls.join(' | ');
     const cleanNotes = sanitizeInput(data.notes);
     
     months.forEach(function(month) {
       const monthDate = parseMonthToFirstDay(month);
       
-      const newRow = [
+      sheet.appendRow([
         timestamp,
         "Expense",
         formattedDate,
@@ -516,17 +517,12 @@ function submitExpense(data) {
         "",
         negativeAmount,
         cleanNotes,
-        "",   // placeholder for attachment cell
+        attachmentString,
         userPassword
-      ];
-      sheet.appendRow(newRow);
+      ]);
       
-      // Write attachment hyperlinks into column 10 (index 9) of the last row
-      if (attachmentUrls.length > 0) {
-        const lastRow = sheet.getLastRow();
-        const cell = sheet.getRange(lastRow, 10);
-        buildAttachmentRichText(cell, attachmentUrls);
-      }
+      // Force MMM-YY display on the month cell (col 6) so column format isn't overridden
+      sheet.getRange(sheet.getLastRow(), 6).setNumberFormat('MMM-YY');
     });
     
     let message = 'Expense recorded: ' + months.length + ' month(s)';
@@ -598,7 +594,7 @@ function submitRevenue(data) {
       months.forEach(function(month) {
         const monthDate = parseMonthToFirstDay(month);
         
-        const newRow = [
+        sheet.appendRow([
           timestamp,
           "Revenue",
           formattedDate,
@@ -608,17 +604,12 @@ function submitRevenue(data) {
           tenant,
           amountPerEntry,
           cleanNotes,
-          "",   // placeholder for attachment cell
+          attachmentString,
           userPassword
-        ];
-        sheet.appendRow(newRow);
+        ]);
         
-        // Write attachment hyperlinks into column 10 (index 9) of the last row
-        if (attachmentUrls.length > 0) {
-          const lastRow = sheet.getLastRow();
-          const cell = sheet.getRange(lastRow, 10);
-          buildAttachmentRichText(cell, attachmentUrls);
-        }
+        // Force MMM-YY display on the month cell (col 6) so column format isn't overridden
+        sheet.getRange(sheet.getLastRow(), 6).setNumberFormat('MMM-YY');
       });
     });
     
@@ -685,37 +676,7 @@ function processAttachmentsWithErrors(attachments, timestamp, category) {
   return {links: links, errors: errors};
 }
 
-// Build rich-text hyperlinks in a single cell, one per attachment
-// e.g. "File 1 | File 2 | File 3" each word being a clickable link
-function buildAttachmentRichText(cell, urls) {
-  if (!urls || urls.length === 0) return;
-  
-  try {
-    const separator = ' | ';
-    let fullText = '';
-    const runs = [];
-    
-    urls.forEach(function(url, idx) {
-      const label = 'File ' + (idx + 1);
-      const start = fullText.length;
-      fullText += label;
-      runs.push({ start: start, end: fullText.length, url: url });
-      if (idx < urls.length - 1) fullText += separator;
-    });
-    
-    const richText = SpreadsheetApp.newRichTextValue().setText(fullText);
-    runs.forEach(function(run) {
-      richText.setLinkUrl(run.start, run.end, run.url);
-    });
-    
-    cell.setRichTextValue(richText.build());
-  } catch (e) {
-    // Fallback: write plain URLs separated by newlines
-    cell.setValue(urls.join('\n'));
-  }
-}
-
-
+// ==================== DASHBOARD DATA ====================
 
 function getDashboardData() {
   try {
@@ -760,6 +721,7 @@ function getDashboardData() {
     });
     
     const matrixData = buildMatrixFromData(allData);
+    const rentMatrix = buildRentMatrixFromData(allData);
     
     return JSON.stringify({
       beginningBalance: CONFIG.BEGINNING_BALANCE.toFixed(2),
@@ -767,6 +729,7 @@ function getDashboardData() {
       expenseTotal: expenseTotal.toFixed(2),
       currentBalance: (CONFIG.BEGINNING_BALANCE + revenueTotal - expenseTotal).toFixed(2),
       matrixData: matrixData,
+      rentMatrix: rentMatrix,
       transactions: transactions
     });
     
@@ -837,6 +800,56 @@ function buildMatrixFromData(dataRows) {
       if (monthStr) {
         const key = tenantNum + '|' + monthStr;
         result.payments[key] = 'paid';
+      }
+    }
+  });
+  
+  return result;
+}
+
+// Build rent matrix: for each month, which tenants paid Rent
+function buildRentMatrixFromData(dataRows) {
+  const result = {
+    months: CONFIG.MONTHS,
+    // payments[month] = array of tenant numbers that paid Rent that month
+    payments: {}
+  };
+  
+  CONFIG.MONTHS.forEach(function(month) {
+    result.payments[month] = [];
+  });
+  
+  if (!dataRows || dataRows.length === 0) return result;
+  
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  
+  dataRows.forEach(function(row) {
+    const type = row[1];
+    const category = row[3];
+    const monthRaw = row[5];
+    const tenant = row[6];
+    
+    if (type === 'Revenue' && category === 'Rent' && tenant && monthRaw) {
+      const tenantNum = String(tenant).trim();
+      let monthStr = null;
+      
+      if (monthRaw instanceof Date) {
+        const mm = monthNames[monthRaw.getMonth()];
+        const yy = String(monthRaw.getFullYear()).slice(-2);
+        monthStr = yy + '-' + mm;
+      }
+      else if (typeof monthRaw === 'string' && /^\d{2}-[A-Za-z]{3}$/.test(monthRaw)) {
+        monthStr = monthRaw;
+      }
+      else if (typeof monthRaw === 'string' && /^[A-Za-z]{3}-\d{2}$/.test(monthRaw)) {
+        const parts = monthRaw.split('-');
+        monthStr = parts[1] + '-' + parts[0];
+      }
+      
+      if (monthStr && result.payments[monthStr] !== undefined) {
+        if (!result.payments[monthStr].includes(tenantNum)) {
+          result.payments[monthStr].push(tenantNum);
+        }
       }
     }
   });

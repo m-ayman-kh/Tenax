@@ -385,6 +385,14 @@
   </div>
   
   <div class="section">
+    <h2>🏠 Rent Payment Matrix</h2>
+    <p style="color: #666; font-size: 12px; margin-bottom: 12px; margin-top: -10px;">Tenants who paid Rent per month</p>
+    <div class="table-container" id="rentMatrixContainer">
+      <div style="text-align: center; padding: 40px; color: #999;">Loading...</div>
+    </div>
+  </div>
+
+  <div class="section">
     <h2>📋 Recent Transactions</h2>
     <div class="table-container" id="transactionsTable">
       <div style="text-align: center; padding: 40px; color: #999;">Loading...</div>
@@ -432,6 +440,7 @@
       document.getElementById('currentBalance').style.color = net >= 0 ? '#43e97b' : '#f5576c';
       
       renderMatrix(data.matrixData);
+      renderRentMatrix(data.rentMatrix);
       renderTransactions(data.transactions);
     }
     
@@ -480,6 +489,55 @@
       document.getElementById('matrixContainer').innerHTML = html;
     }
     
+    function renderRentMatrix(rentMatrix) {
+      const container = document.getElementById('rentMatrixContainer');
+      if (!rentMatrix || !rentMatrix.months || rentMatrix.months.length === 0) {
+        container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">No rent data available</div>';
+        return;
+      }
+
+      const months = rentMatrix.months;
+      const payments = rentMatrix.payments;
+
+      // Only show months that have at least one payment
+      const activeMonths = months.filter(function(m) {
+        return payments[m] && payments[m].length > 0;
+      });
+
+      if (activeMonths.length === 0) {
+        container.innerHTML = '<div style="text-align:center;padding:40px;color:#999;">No rent payments recorded yet</div>';
+        return;
+      }
+
+      // Find max tenants in any month for row count
+      const maxTenants = Math.max.apply(null, activeMonths.map(function(m) {
+        return payments[m].length;
+      }));
+
+      let html = '<table><thead><tr>';
+      activeMonths.forEach(function(month) {
+        const displayMonth = convertYyMmmToMmmYy(month);
+        html += '<th style="background:#4facfe;color:white;text-align:center;">' + displayMonth + '<br><small style="font-weight:normal;opacity:0.85;">' + payments[month].length + ' paid</small></th>';
+      });
+      html += '</tr></thead><tbody>';
+
+      for (let i = 0; i < maxTenants; i++) {
+        html += '<tr>';
+        activeMonths.forEach(function(month) {
+          const tenantList = payments[month];
+          if (i < tenantList.length) {
+            html += '<td style="text-align:center;background:#e8f5e9;color:#2e7d32;font-weight:600;">Unit ' + tenantList[i] + '</td>';
+          } else {
+            html += '<td></td>';
+          }
+        });
+        html += '</tr>';
+      }
+
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
         function renderTransactions(transactions) {
       if (!transactions || transactions.length === 0) {
         document.getElementById('transactionsTable').innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">No transactions found</div>';
@@ -527,14 +585,14 @@
         html += '<td class="amount ' + amountClass + '">' + formatAmount(amount) + '</td>';
         html += '<td>' + (note || '-') + '</td>';
         
-        // Attachment as clickable link(s)
+        // Attachment as clickable links — URLs stored pipe-separated
         if (attachment && attachment.toString().trim()) {
-          const urls = attachment.toString().split(',').map(u => u.trim()).filter(u => u);
+          const urls = attachment.toString().split(' | ').map(u => u.trim()).filter(u => u.startsWith('http'));
           if (urls.length > 0) {
             html += '<td>';
             urls.forEach(function(url, idx) {
-              html += '<a href="' + url + '" target="_blank" class="attachment-link">Link ' + (idx + 1) + '</a>';
-              if (idx < urls.length - 1) html += ', ';
+              html += '<a href="' + url + '" target="_blank" class="attachment-link">📎 ' + (idx + 1) + '</a>';
+              if (idx < urls.length - 1) html += ' ';
             });
             html += '</td>';
           } else {
