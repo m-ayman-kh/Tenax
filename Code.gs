@@ -427,7 +427,8 @@ function formatDateCairo(dateString) {
   return parts[1] + '/' + parts[2] + '/' + parts[0];
 }
 
-// Parse month string to Date object set to first day of month
+// Parse month string to Date object (first day of month)
+// Storing as a Date ensures chronological sorting in pivots and filters
 function parseMonthToFirstDay(monthStr) {
   if (!monthStr) return null;
   
@@ -435,19 +436,19 @@ function parseMonthToFirstDay(monthStr) {
   let monthIndex = -1;
   let year = 2026;
   
-  // yy-mmm format (e.g., "26-Feb")
+  // yy-mmm format (e.g., "26-Apr")
   if (/^\d{2}-[A-Za-z]{3}$/.test(monthStr)) {
     const parts = monthStr.split('-');
     year = 2000 + parseInt(parts[0]);
     monthIndex = monthNames.indexOf(parts[1]);
   }
-  // mmm-yy format (e.g., "Feb-26")
+  // mmm-yy format (e.g., "Apr-26")
   else if (/^[A-Za-z]{3}-\d{2}$/.test(monthStr)) {
     const parts = monthStr.split('-');
     monthIndex = monthNames.indexOf(parts[0]);
     year = 2000 + parseInt(parts[1]);
   }
-  // mm-yy format (e.g., "02-26")
+  // mm-yy format (e.g., "04-26")
   else if (/^\d{2}-\d{2}$/.test(monthStr)) {
     const parts = monthStr.split('-');
     monthIndex = parseInt(parts[0]) - 1;
@@ -500,13 +501,12 @@ function submitExpense(data) {
       attachmentUrls = result.links;
       attachmentErrors = result.errors;
     }
-    const attachmentString = attachmentUrls.join(', ');
     const cleanNotes = sanitizeInput(data.notes);
     
     months.forEach(function(month) {
       const monthDate = parseMonthToFirstDay(month);
       
-      sheet.appendRow([
+      const newRow = [
         timestamp,
         "Expense",
         formattedDate,
@@ -516,9 +516,17 @@ function submitExpense(data) {
         "",
         negativeAmount,
         cleanNotes,
-        attachmentString,
+        "",   // placeholder for attachment cell
         userPassword
-      ]);
+      ];
+      sheet.appendRow(newRow);
+      
+      // Write attachment hyperlinks into column 10 (index 9) of the last row
+      if (attachmentUrls.length > 0) {
+        const lastRow = sheet.getLastRow();
+        const cell = sheet.getRange(lastRow, 10);
+        buildAttachmentRichText(cell, attachmentUrls);
+      }
     });
     
     let message = 'Expense recorded: ' + months.length + ' month(s)';
@@ -583,14 +591,14 @@ function submitRevenue(data) {
       attachmentUrls = result.links;
       attachmentErrors = result.errors;
     }
-    const attachmentString = attachmentUrls.join(', ');
+    const attachmentString = attachmentUrls.join(' | ');
     const cleanNotes = sanitizeInput(data.notes);
     
     tenants.forEach(function(tenant) {
       months.forEach(function(month) {
         const monthDate = parseMonthToFirstDay(month);
         
-        sheet.appendRow([
+        const newRow = [
           timestamp,
           "Revenue",
           formattedDate,
@@ -600,9 +608,17 @@ function submitRevenue(data) {
           tenant,
           amountPerEntry,
           cleanNotes,
-          attachmentString,
+          "",   // placeholder for attachment cell
           userPassword
-        ]);
+        ];
+        sheet.appendRow(newRow);
+        
+        // Write attachment hyperlinks into column 10 (index 9) of the last row
+        if (attachmentUrls.length > 0) {
+          const lastRow = sheet.getLastRow();
+          const cell = sheet.getRange(lastRow, 10);
+          buildAttachmentRichText(cell, attachmentUrls);
+        }
       });
     });
     
@@ -669,7 +685,37 @@ function processAttachmentsWithErrors(attachments, timestamp, category) {
   return {links: links, errors: errors};
 }
 
-// ==================== DASHBOARD DATA ====================
+// Build rich-text hyperlinks in a single cell, one per attachment
+// e.g. "File 1 | File 2 | File 3" each word being a clickable link
+function buildAttachmentRichText(cell, urls) {
+  if (!urls || urls.length === 0) return;
+  
+  try {
+    const separator = ' | ';
+    let fullText = '';
+    const runs = [];
+    
+    urls.forEach(function(url, idx) {
+      const label = 'File ' + (idx + 1);
+      const start = fullText.length;
+      fullText += label;
+      runs.push({ start: start, end: fullText.length, url: url });
+      if (idx < urls.length - 1) fullText += separator;
+    });
+    
+    const richText = SpreadsheetApp.newRichTextValue().setText(fullText);
+    runs.forEach(function(run) {
+      richText.setLinkUrl(run.start, run.end, run.url);
+    });
+    
+    cell.setRichTextValue(richText.build());
+  } catch (e) {
+    // Fallback: write plain URLs separated by newlines
+    cell.setValue(urls.join('\n'));
+  }
+}
+
+
 
 function getDashboardData() {
   try {
