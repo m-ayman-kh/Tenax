@@ -1,95 +1,16 @@
-# 🏢 PropertyFlow
+# React + Vite
 
-A full-stack **Finance Tracker** built entirely on **Google Apps Script**, designed to manage expenses, revenue, and tenant payments for a residential buildings.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
----
+Currently, two official plugins are available:
 
-## 🌟 Features
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-- **Role-Based Access Control** — Three user roles: Admin, Editor, and Viewer (per-tenant)
-- **Expense Tracking** — Log building expenses with categories, subcategories, and file attachments
-- **Revenue Tracking** — Record rent and other income across multiple tenants and months
-- **Live Dashboard** — Real-time financial overview including balance, totals, and a 20-unit payment matrix
-- **Session Management** — Secure token-based sessions with 10-minute auto-expiry
-- **Password Manager** — Admin panel to manage all user passwords without touching the code
-- **File Attachments** — Upload receipts and documents directly to Google Drive per transaction
-- **Mobile Friendly** — Fully responsive UI that works on phones and tablets
+## React Compiler
 
----
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-## 🛠️ Tech Stack
+## Expanding the ESLint configuration
 
-| Layer | Technology |
-|---|---|
-| Backend | Google Apps Script (JavaScript) |
-| Frontend | Vanilla HTML, CSS, JavaScript (SPA) |
-| Database | Google Sheets |
-| File Storage | Google Drive |
-| Auth | Token-based sessions via CacheService |
-| Config | Script Properties (no hardcoded secrets) |
-
----
-
-## 📁 Project Structure
-
-```
-PropertyFlow/
-├── Code.txt            # Backend: routing, auth, data logic (Apps Script)
-├── App.txt             # Main SPA shell with navigation
-├── Dashboard.txt       # Financial dashboard + payment matrix
-├── ExpenseForm.txt     # Expense entry form with attachments
-├── RevenueForm.txt     # Revenue entry form (multi-tenant/month)
-├── Login.txt           # Login page with session creation
-└── PasswordManager.txt # Admin panel for managing passwords
-```
-
-> **Note:** Files use `.txt` extension for GitHub display. In Google Apps Script they are `.html` and `.gs` files.
-
----
-
-## 🏗️ Architecture
-
-```
-User Browser
-     │
-     ▼
-Google Apps Script Web App
-     │
-     ├── doGet()  → Serves HTML pages (Login / App / PasswordManager)
-     └── doPost() → Handles all API actions
-              │
-              ├── Authentication (login, token validation)
-              ├── Form Templates (expense, revenue, dashboard)
-              ├── Data Submission (write to Google Sheets)
-              ├── Dashboard Data (read + aggregate from Sheets)
-              └── Password Management (Script Properties)
-```
-
----
-
-## 🔐 Security Design
-
-- All passwords stored in **Google Script Properties** (not in code)
-- Sessions managed via **CacheService** with UUID tokens
-- Role enforcement on every API call server-side
-- No sensitive data committed to this repository
-
----
-
-## 🚀 How to Deploy
-
-1. Open [Google Apps Script](https://script.google.com) and create a new project
-2. Copy each `.txt` file into its corresponding Apps Script file (`.gs` or `.html`)
-3. Set up your Google Sheet and update `SPREADSHEET_ID` and `PARENT_FOLDER_ID` in `Code.txt`
-4. Go to **Project Settings → Script Properties** and set:
-   - `MASTER_PASSWORD` — your admin password
-5. Click **Deploy → New Deployment → Web App**
-6. Set access to **"Anyone"** and copy the deployment URL
-
----
-
-## 👤 Author
-
-**Mohamed Ayman**
-- GitHub: [@m-ayman-kh](https://github.com/m-ayman-kh)
-- Linkedin: [@m-ayman-kh](https://www.linkedin.com/in/i-am-khalifa/)
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
