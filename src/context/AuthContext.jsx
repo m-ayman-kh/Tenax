@@ -32,7 +32,7 @@ export function AuthProvider({ children }) {
   async function fetchProfile(userId) {
     const { data: profileData } = await supabase
       .from('profiles')
-      .select('*, buildings(*)')
+      .select('*, buildings(*), is_super_admin')
       .eq('id', userId)
       .single()
 

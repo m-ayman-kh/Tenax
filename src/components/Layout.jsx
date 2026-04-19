@@ -30,7 +30,7 @@ export default function Layout() {
     { path: '/dashboard', label: 'Dashboard', icon: '◎' },
     { path: '/expense', label: 'Expense', icon: '↓', restricted: true },
     { path: '/revenue', label: 'Revenue', icon: '↑', restricted: true },
-    { path: '/admin', label: 'Admin', icon: '⚙', adminOnly: true },
+    { path: '/admin', label: 'Admin', icon: '⚙', superAdminOnly: true },
   ]
 
   return (
@@ -57,7 +57,7 @@ export default function Layout() {
         }}>
         <div className="flex justify-around items-center py-2 max-w-2xl mx-auto">
           {tabs.map(tab => {
-            if (tab.adminOnly && role !== 'bookkeeper') return null
+            if (tab.superAdminOnly && !profile?.is_super_admin) return null
             const isActive = location.pathname === tab.path
             const isLocked = tab.restricted && role === 'tenant'
 
