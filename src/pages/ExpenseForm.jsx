@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { compressImage } from '../lib/compress'
 
 const EXPENSE_CATEGORIES = {
   'Maintenance': ['Plumber','Painting','Electrical','HVAC','Cleaning','Security','Other'],
@@ -48,6 +49,7 @@ export default function ExpenseForm() {
   }
 
   async function uploadFile(file) {
+    const compressed = await compressImage(file)
     return new Promise((resolve, reject) => {
       const reader = new FileReader()
       reader.onloadend = async () => {

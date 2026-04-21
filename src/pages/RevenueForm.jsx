@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { compressImage } from '../lib/compress'
 
 const REVENUE_CATEGORIES = ['Rent','Parking','Laundry','Storage','Late Fees','Security Deposit','Monthly Debt','Other']
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
@@ -47,6 +48,7 @@ export default function RevenueForm() {
   }
 
   async function uploadFile(file) {
+    const compressed = await compressImage(file)
     return new Promise((resolve, reject) => {
       const reader = new FileReader()
       reader.onloadend = async () => {
