@@ -172,5 +172,92 @@ VITE_SUPABASE_ANON_KEY=your_anon_key
 
 ---
 
+---
+
+## 🧩 Key Code Patterns (mandatory context)
+
+### Month format
+- Stored in DB as: `date` type, first day of month e.g. `2026-01-01`
+- Displayed in UI as: `MMM-YY` e.g. `Jan-26`
+- Conversion function used everywhere: `fmtMonth(date)` in Dashboard.jsx
+- In forms, months are hardcoded as: `2026-${String(i+1).padStart(2,'0')}-01`
+
+### Colors (brand)
+- Primary gradient: `#667eea → #764ba2`
+- Revenue green: `#22c55e` (text), `#16a34a` (dark variant), `#dcfce7` (background)
+- Expense red: `#f5576c` (text), `#dc2626` (dark), `#fee2e2` (background)
+- Page background: `#f5f5f5`
+- Card border: `0.5px solid #e0e0e0`
+
+### Auth context usage
+```jsx
+const { user, profile, building, loading, signIn, signOut } = useAuth()
+// profile.role → 'tenant' | 'bookkeeper'
+// profile.is_super_admin → true | false
+// profile.building_id → uuid
+// building.config → { beginning_balance, total_units, parking_slots, language, currency }
+```
+
+### Building config access pattern
+```jsx
+const totalUnits = building?.config?.total_units || 20
+const parkingSlots = building?.config?.parking_slots || 5
+const beginningBalance = building?.config?.beginning_balance || 50000
+```
+
+### Supabase query pattern
+```jsx
+const { data, error } = await supabase
+  .from('transactions')
+  .select('*')
+  .eq('building_id', profile.building_id)
+  .order('date', { ascending: false })
+```
+
+### Google Drive upload pattern
+```jsx
+const { data, error } = await supabase.functions.invoke('upload-to-drive', {
+  body: { fileName, fileType, fileData: base64, folder: `PropertyFlow/${building.name}` }
+})
+// returns { success: true, url: 'https://drive.google.com/...' }
+```
+
+### Image compression
+```jsx
+import { compressImage } from '../lib/compress'
+const compressed = await compressImage(file) // max 1200px, 75% quality, images only
+```
+
+### Protected route logic
+- Tenant → dashboard only, expense/revenue routes redirect to /dashboard
+- Bookkeeper → dashboard + expense + revenue
+- is_super_admin → everything + admin panel + building switcher in header
+
+### Transaction structure
+```js
+{
+  building_id, type: 'Revenue'|'Expense',
+  date,        // entry date e.g. '2026-04-01'
+  category,    // e.g. 'Rent', 'Maintenance'
+  sub_category,// expenses only
+  month,       // first of month e.g. '2026-01-01'
+  tenant_unit, // string e.g. '7', null for expenses
+  amount,      // positive for revenue, negative for expenses
+  notes,
+  attachment_urls, // string[] of Google Drive links
+  created_by   // auth.users.id
+}
+```
+
+### Matrix logic
+- Monthly Debt matrix: revenue rows where category = 'Monthly Debt', tenant_unit × month
+- Parking matrix: revenue rows where category = 'Parking', slots filled by order of entry
+
+### Known hardcoded values to fix later
+- Months array in forms hardcoded to 2026 — should read from `building_months` table
+- Categories in forms hardcoded in JSX — should read from `categories` table + building config
+
+---
+
 ## 👤 Author
 Mohamed Ayman — [@m-ayman-kh](https://github.com/m-ayman-kh)
