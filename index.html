@@ -12,10 +12,25 @@
     history.replaceState(null, null, redirect);
   }
 </script>
+<link rel="manifest" href="/PropertyFlow/manifest.json">
+<link rel="apple-touch-icon" href="/PropertyFlow/icons/icon-192x192.svg">
+<meta name="theme-color" content="#667eea">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PropertyFlow">
     <script type="module" crossorigin src="/PropertyFlow/assets/index-C_CR_LLR.js"></script>
     <link rel="stylesheet" crossorigin href="/PropertyFlow/assets/index-Xbicqa5h.css">
   </head>
   <body>
     <div id="root"></div>
+  <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/PropertyFlow/sw.js')
+        .then(reg => console.log('SW registered:', reg.scope))
+        .catch(err => console.log('SW failed:', err))
+    })
+  }
+</script>
   </body>
 </html>
