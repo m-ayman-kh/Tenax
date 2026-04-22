@@ -1,16 +1,54 @@
-# React + Vite
+# 🏢 PropertyFlow
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern property management web app built with React, Supabase, and deployed on GitHub Pages.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🌟 Features
 
-## React Compiler
+- **Multi-building** — one platform, unlimited buildings, separated by building_id
+- **Role-based access** — tenant (dashboard only), bookkeeper (forms + dashboard), super admin (everything)
+- **Dashboard** — financial overview, revenue vs expense chart, payment matrices, transactions feed
+- **Expense tracking** — categories, subcategories, multi-month, file attachments via Google Drive
+- **Revenue tracking** — multi-tenant, multi-month, amount splits automatically
+- **Parking matrix** — configurable slots per building, tracks who paid each month
+- **Access requests** — tenants request via /join, super admin approves and invites
+- **PWA ready** — installable on home screen, mobile-first design
+- **Image compression** — client-side before upload
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## 🛠️ Tech Stack
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+| Layer | Technology |
+|---|---|
+| Frontend | React 18 + Vite 8 + Tailwind CSS |
+| Database | Supabase (PostgreSQL) |
+| Auth | Supabase email/password |
+| File Storage | Google Drive via Edge Function |
+| Deployment | GitHub Pages |
+
+---
+
+## 🚀 Getting Started
+
+```bash
+npm install
+npm run dev
+```
+
+Create `.env.local` in the root:
+
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_anon_key
+
+Deploy:
+```bash
+npm run deploy
+```
+
+---
+
+## 👤 Author
+
+Mohamed Ayman — [@m-ayman-kh](https://github.com/m-ayman-kh)
