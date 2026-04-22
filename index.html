@@ -19,17 +19,46 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="PropertyFlow">
   </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+<body>
+  <div id="splash" style="
+    position: fixed; inset: 0; z-index: 9999;
+    background: #1a0533;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 20px;">
+    <svg width="90" height="90" viewBox="0 0 120 120" fill="none">
+      <rect width="120" height="120" rx="28" fill="#4c1d95"/>
+      <path d="M60 16 L96 36 L24 36 Z" fill="white" opacity="0.18"/>
+      <rect x="30" y="44" width="60" height="52" rx="4" fill="white" opacity="0.95"/>
+      <rect x="38" y="52" width="12" height="12" rx="2" fill="#4c1d95"/>
+      <rect x="54" y="52" width="12" height="12" rx="2" fill="#4c1d95"/>
+      <rect x="70" y="52" width="12" height="12" rx="2" fill="#4c1d95"/>
+      <rect x="42" y="68" width="36" height="28" rx="2" fill="#4c1d95"/>
+      <circle cx="88" cy="76" r="16" fill="#22c55e"/>
+      <path d="M81 76 L86 81 L95 69" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </svg>
+    <div style="color:white; font-size:20px; font-weight:600; letter-spacing:0.5px;">PropertyFlow</div>
+    <div style="width:40px; height:3px; background:#667eea; border-radius:2px; overflow:hidden;">
+      <div id="splash-bar" style="height:100%; width:0%; background:#a78bfa; border-radius:2px; transition:width 0.4s ease;"></div>
+    </div>
+  </div>
+  <div id="root"></div>
   <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/PropertyFlow/sw.js')
-        .then(reg => console.log('SW registered:', reg.scope))
-        .catch(err => console.log('SW failed:', err))
+    var bar = document.getElementById('splash-bar')
+    var splash = document.getElementById('splash')
+    var p = 0
+    var iv = setInterval(function() {
+      p = Math.min(p + Math.random() * 15, 85)
+      bar.style.width = p + '%'
+    }, 200)
+    window.addEventListener('load', function() {
+      clearInterval(iv)
+      bar.style.width = '100%'
+      setTimeout(function() {
+        splash.style.opacity = '0'
+        splash.style.transition = 'opacity 0.4s'
+        setTimeout(function() { splash.style.display = 'none' }, 400)
+      }, 300)
     })
-  }
-</script>
+  </script>
   </body>
 </html>
