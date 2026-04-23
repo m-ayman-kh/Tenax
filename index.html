@@ -18,6 +18,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="PropertyFlow">
+<script type="module" src="/src/main.jsx"></script>
   </head>
 <body>
   <div id="splash" style="
@@ -60,5 +61,14 @@
       }, 300)
     })
   </script>
-  </body>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/PropertyFlow/sw.js')
+        .then(reg => console.log('SW registered:', reg.scope))
+        .catch(err => console.log('SW failed:', err))
+    })
+  }
+</script>  
+</body>
 </html>
