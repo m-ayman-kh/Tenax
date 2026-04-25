@@ -135,25 +135,32 @@ After deploy, GitHub Actions builds and publishes automatically (~2 min).
 - [x] Role-based access (tenant, bookkeeper, super admin)
 - [x] Protected routes
 - [x] Multi-building support with building switcher (super admin)
-- [x] Dashboard with 3 tabs
-- [x] Monthly Debt matrix (sticky column)
-- [x] Parking matrix (configurable slots)
+- [x] Dashboard with 2 tabs (Overview, Matrices)
+- [x] Monthly Debt matrix (sticky first column, horizontal scroll)
+- [x] Parking matrix (configurable slots per building)
+- [x] Bar chart (Revenue vs Expenses per month)
+- [x] AI insights slot (placeholder)
 - [x] Expense form with Google Drive attachments + image compression
 - [x] Revenue form with multi-tenant/month selection + image compression
 - [x] Admin panel (join requests, users, buildings)
 - [x] Join page for access requests
-- [x] SVG app icons + PWA manifest
+- [x] SVG app icons + PWA manifest + service worker
+- [x] Splash screen on app load
 - [x] 404 fix for GitHub Pages
+- [x] Log page (separate tab, accessible to all roles)
+- [x] Log filters: type chips, category, sub-category, unit, month, date range
+- [x] Bottom nav: Dashboard, Log, Expense, Revenue, Admin
 
 ---
 
 ## 🔲 Pending Features (Priority Order)
-1. **PWA service worker** — offline support, install prompt
-2. **Transaction filters** — filter by type, category, tenant, month in dashboard
-3. **Arabic RTL support** — per-building language toggle
-4. **AI insights panel** — Claude API via Supabase Edge Function (Phase 2)
+1. **Arabic RTL support** — per-building language toggle, full RTL layout
+2. **AI insights panel** — Claude API via Supabase Edge Function (Phase 2)
+3. **Fix hardcoded months** — read from `building_months` table instead of hardcoded 2026 array
+4. **Fix hardcoded categories** — read from `categories` table + building config override
 5. **Google Sheets sync** — Supabase webhook → Sheets for pivot analysis
 6. **Capacitor** — wrap as native iOS/Android app
+7. **WhatsApp notifications** — via WhatsApp Business API
 
 ---
 

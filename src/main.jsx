@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import Login from './pages/Login'
 import Join from './pages/Join'
 import Dashboard from './pages/Dashboard'
+import Log from './pages/Log'
 import ExpenseForm from './pages/ExpenseForm'
 import RevenueForm from './pages/RevenueForm'
 import Admin from './pages/Admin'
@@ -32,6 +33,7 @@ function AppRoutes() {
         </ProtectedRoute>
       }>
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/log" element={<Log />} />
         <Route path="/expense" element={
           <ProtectedRoute requireBookkeeper>
             <ExpenseForm />

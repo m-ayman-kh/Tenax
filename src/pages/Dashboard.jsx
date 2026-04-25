@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
-const TABS = ['Overview', 'Matrices', 'Transactions']
+const TABS = ['Overview', 'Matrices']
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
 function fmtMonth(date) {
@@ -264,42 +264,6 @@ export default function Dashboard() {
       )}
 
       {/* Transactions Tab */}
-      {tab === 'Transactions' && (
-        <div className="bg-white rounded-2xl p-4" style={{ border: '0.5px solid #e0e0e0' }}>
-          <div className="text-sm font-medium text-gray-600 mb-3">Recent Transactions</div>
-          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-            <table style={{ borderCollapse: 'collapse', fontSize: 11, width: '100%' }}>
-              <thead>
-                <tr style={{ background: '#f5f5f5' }}>
-                  {['Type','Date','Category','Month','Unit','Amount'].map(h => (
-                    <th key={h} style={{ padding: '8px 6px', textAlign: 'left', color: '#666', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {transactions.slice(0, 50).map(t => (
-                  <tr key={t.id} style={{ borderBottom: '0.5px solid #f0f0f0' }}>
-                    <td style={{ padding: '7px 6px' }}>
-                      <span style={{
-                        background: t.type === 'Revenue' ? '#dcfce7' : '#fee2e2',
-                        color: t.type === 'Revenue' ? '#16a34a' : '#dc2626',
-                        padding: '2px 7px', borderRadius: 10, fontSize: 10, fontWeight: 500
-                      }}>{t.type}</span>
-                    </td>
-                    <td style={{ padding: '7px 6px', whiteSpace: 'nowrap' }}>{t.date?.slice(5)}</td>
-                    <td style={{ padding: '7px 6px', whiteSpace: 'nowrap' }}>{t.category}</td>
-                    <td style={{ padding: '7px 6px', whiteSpace: 'nowrap' }}>{fmtMonth(t.month)}</td>
-                    <td style={{ padding: '7px 6px' }}>{t.tenant_unit || '-'}</td>
-                    <td style={{ padding: '7px 6px', fontWeight: 500, color: t.type === 'Revenue' ? '#22c55e' : '#f5576c', whiteSpace: 'nowrap' }}>
-                      {fmtCurrency(Math.abs(parseFloat(t.amount)))}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

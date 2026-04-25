@@ -10,6 +10,13 @@ const icons = {
       <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
     </svg>
   ),
+  log: (active) => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={active ? '#667eea' : '#888'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+      <line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/>
+      <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+    </svg>
+  ),
   expense: (active) => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={active ? '#667eea' : '#888'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>
@@ -70,6 +77,7 @@ export default function Layout() {
   const role = profile?.role
   const tabs = [
     { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
+    { path: '/log', label: 'Log', icon: 'log' },
     { path: '/expense', label: 'Expense', icon: 'expense', restricted: true },
     { path: '/revenue', label: 'Revenue', icon: 'revenue', restricted: true },
     { path: '/admin', label: 'Admin', icon: 'admin', superAdminOnly: true },
