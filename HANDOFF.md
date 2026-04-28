@@ -266,5 +266,77 @@ const compressed = await compressImage(file) // max 1200px, 75% quality, images 
 
 ---
 
+---
+
+## 🎯 Feature Backlog (for next conversation)
+
+### 1. Arabic RTL + Translation (next up)
+- Building config has `language: 'en' | 'ar'`
+- Need: full RTL layout flip + Arabic UI labels for all pages
+- Pages affected: Login, Join, Dashboard, Log, ExpenseForm, RevenueForm, Admin, Layout
+- Approach: create `src/lib/i18n.js` with en/ar label maps, read language from `building.config.language`, set `dir="rtl"` on root div conditionally
+- Arabic font: Cairo or Tajawal from Google Fonts
+
+### 2. Fix Hardcoded Months
+- Currently: months hardcoded as `2026-01-01` to `2026-12-01` in ExpenseForm and RevenueForm
+- Should: read from `building_months` table filtered by `building_id`
+- Table exists but no rows inserted yet — need UI in Admin panel to manage months per building
+- Admin panel Buildings tab should have a "Manage Months" section: add month, remove month, mark active/inactive
+
+### 3. Fix Hardcoded Categories
+- Currently: `EXPENSE_CATEGORIES` and `REVENUE_CATEGORIES` hardcoded in ExpenseForm and RevenueForm
+- Should: read from `categories` table (global defaults) + override from `building.config.expense_categories` and `building.config.revenue_categories` if not null
+- Admin panel Buildings tab should allow adding custom categories per building
+
+### 4. AI Insights Panel (Phase 2)
+- Placeholder card already in Dashboard Overview tab
+- Implementation: Supabase Edge Function `ai-insights` calls Claude API (claude-haiku-4-5-20251001)
+- Input: last 60 days of transactions summarized as JSON
+- Output: 3-4 plain English insight cards
+- Cost: ~$0.001 per dashboard load
+- API key stored as Supabase secret: `ANTHROPIC_API_KEY`
+
+### 5. Google Sheets Sync
+- Purpose: pivot analysis of transaction data in Sheets
+- Approach: Supabase Database Webhook on `transactions` table INSERT → Edge Function → Google Sheets API
+- Same Google Service Account already set up for Drive can be reused
+- Target sheet: separate from the old GAS sheet
+
+### 6. PWA Enhancements
+- Add install prompt banner ("Add to Home Screen") for first-time visitors
+- Test splash screen on iOS Safari
+- Chrome PWA install currently not working — investigate
+
+### 7. Capacitor (Phase 3)
+- Wrap React app as native iOS/Android app
+- Requires Apple Developer Account ($99/year) for iOS
+- Google Play is $25 one-time
+
+### 8. WhatsApp Notifications (Phase 3)
+- Via WhatsApp Business API
+- Use case: notify tenants when payment recorded, notify bookkeeper of new join requests
+- Requires WhatsApp Business account approval
+
+---
+
+## 📋 Admin Panel — Pending Sections
+Current Admin tabs: Join Requests, Users, Buildings
+Still needed inside Buildings tab:
+- Manage months (add/remove months per building)
+- Manage custom categories per building
+- Building config currently edited field by field — consider a cleaner settings form
+
+---
+
+## 🐛 Known Bugs / Issues
+- Chrome PWA install not working on mobile (Edge works)
+- Deno linter warnings in `invite-user/index.ts` — cosmetic only
+- Chunk size warning on build — fix with dynamic imports later
+- `building_months` table exists but unused
+- Months in forms hardcoded to 2026
+- Categories in forms hardcoded in JSX
+
+---
+
 ## 👤 Author
 Mohamed Ayman — [@m-ayman-kh](https://github.com/m-ayman-kh)
