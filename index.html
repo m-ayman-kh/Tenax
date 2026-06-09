@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>propertyflow</title>
+    <title>Tenax</title>
     <script>
   var redirect = sessionStorage.redirect;
   delete sessionStorage.redirect;
@@ -12,12 +12,12 @@
     history.replaceState(null, null, redirect);
   }
 </script>
-<link rel="manifest" href="/PropertyFlow/manifest.json">
-<link rel="apple-touch-icon" href="/PropertyFlow/icons/icon-192x192.svg">
+<link rel="manifest" href="/Tenax/manifest.json">
+<link rel="apple-touch-icon" href="/Tenax/icons/icon-192x192.svg">
 <meta name="theme-color" content="#667eea">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="PropertyFlow">
+<meta name="apple-mobile-web-app-title" content="Tenax">
 <script type="module" src="/src/main.jsx"></script>
   </head>
 <body>
@@ -37,7 +37,7 @@
       <circle cx="88" cy="76" r="16" fill="#22c55e"/>
       <path d="M81 76 L86 81 L95 69" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
     </svg>
-    <div style="color:white; font-size:20px; font-weight:600; letter-spacing:0.5px;">PropertyFlow</div>
+    <div style="color:white; font-size:20px; font-weight:600; letter-spacing:0.5px;">Tenax</div>
     <div style="width:40px; height:3px; background:#667eea; border-radius:2px; overflow:hidden;">
       <div id="splash-bar" style="height:100%; width:0%; background:#a78bfa; border-radius:2px; transition:width 0.4s ease;"></div>
     </div>
@@ -64,7 +64,7 @@
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/PropertyFlow/sw.js')
+      navigator.serviceWorker.register('/Tenax/sw.js')
         .then(reg => console.log('SW registered:', reg.scope))
         .catch(err => console.log('SW failed:', err))
     })

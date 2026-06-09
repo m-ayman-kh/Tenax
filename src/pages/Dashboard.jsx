@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
+import { sql } from '../lib/db'
 import { useAuth } from '../context/AuthContext'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
@@ -45,15 +45,15 @@ export default function Dashboard() {
     setLoading(true)
     const threeMonthsAgo = new Date()
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
+    const cutoff = threeMonthsAgo.toISOString().split('T')[0]
 
-    const { data, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('building_id', profile.building_id)
-      .gte('month', threeMonthsAgo.toISOString().split('T')[0])
-      .order('date', { ascending: false })
-
-    if (!error) setTransactions(data || [])
+    const rows = await sql`
+      SELECT * FROM transactions
+      WHERE building_id = ${profile.building_id}
+        AND month >= ${cutoff}
+      ORDER BY date DESC
+    `
+    setTransactions(rows)
     setLoading(false)
   }
 
@@ -87,16 +87,20 @@ export default function Dashboard() {
     const paid = transactions
       .filter(t => t.category === 'Parking' && fmtMonth(t.month) === month && t.type === 'Revenue')
       .map(t => t.tenant_unit)
-    const slots = []
-    for (let i = 0; i < parkingSlots; i++) {
-      slots.push(paid[i] || null)
-    }
-    return slots
+    return Array.from({ length: parkingSlots }, (_, i) => paid[i] || null)
   }
 
   if (loading) return (
     <div className="flex items-center justify-center p-20">
       <div className="text-gray-400">Loading dashboard...</div>
+    </div>
+  )
+
+  if (!profile?.building_id) return (
+    <div className="flex flex-col items-center justify-center p-20 text-center space-y-3">
+      <div className="text-4xl">🏢</div>
+      <div className="text-gray-600 font-medium">You're not assigned to a building yet.</div>
+      <div className="text-gray-400 text-sm">Contact your HOA admin to get access.</div>
     </div>
   )
 
@@ -140,7 +144,6 @@ export default function Dashboard() {
             </ResponsiveContainer>
           </div>
 
-          {/* AI Insights Slot */}
           <div className="bg-white rounded-2xl p-4" style={{ border: '0.5px dashed #c4b5fd' }}>
             <div className="text-sm font-medium mb-1" style={{ color: '#667eea' }}>AI Insights</div>
             <div className="text-xs text-gray-400">Smart analysis of your building data — coming in Phase 2</div>
@@ -151,44 +154,26 @@ export default function Dashboard() {
       {/* Matrices Tab */}
       {tab === 'Matrices' && (
         <div className="space-y-4">
-
-          {/* Monthly Debt Matrix — sticky first column */}
           <div className="bg-white rounded-2xl p-4" style={{ border: '0.5px solid #e0e0e0' }}>
             <div className="text-sm font-medium text-gray-600 mb-3">Monthly Debt Matrix</div>
             <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
               <table style={{ borderCollapse: 'collapse', fontSize: 11, tableLayout: 'auto' }}>
                 <thead>
                   <tr>
-                    <th style={{
-                      padding: '6px 10px', background: '#764ba2', color: 'white',
-                      position: 'sticky', left: 0, zIndex: 2, minWidth: 52, textAlign: 'center'
-                    }}>Unit</th>
+                    <th style={{ padding: '6px 10px', background: '#764ba2', color: 'white', position: 'sticky', left: 0, zIndex: 2, minWidth: 52, textAlign: 'center' }}>Unit</th>
                     {allMonths.map(m => (
-                      <th key={m} style={{
-                        padding: '6px 8px', background: '#667eea', color: 'white',
-                        minWidth: 58, textAlign: 'center', whiteSpace: 'nowrap'
-                      }}>{m}</th>
+                      <th key={m} style={{ padding: '6px 8px', background: '#667eea', color: 'white', minWidth: 58, textAlign: 'center', whiteSpace: 'nowrap' }}>{m}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {tenants.map((tenant, ri) => (
                     <tr key={tenant} style={{ background: ri % 2 === 0 ? 'white' : '#fafafa' }}>
-                      <td style={{
-                        padding: '5px 10px', fontWeight: 600, textAlign: 'center',
-                        position: 'sticky', left: 0, zIndex: 1,
-                        background: ri % 2 === 0 ? 'white' : '#fafafa',
-                        borderRight: '0.5px solid #e0e0e0'
-                      }}>{tenant}</td>
+                      <td style={{ padding: '5px 10px', fontWeight: 600, textAlign: 'center', position: 'sticky', left: 0, zIndex: 1, background: ri % 2 === 0 ? 'white' : '#fafafa', borderRight: '0.5px solid #e0e0e0' }}>{tenant}</td>
                       {allMonths.map(m => {
                         const paid = getDebtStatus(tenant, m)
                         return (
-                          <td key={m} style={{
-                            padding: '5px 4px', textAlign: 'center',
-                            background: paid ? '#dcfce7' : '#fee2e2',
-                            color: paid ? '#16a34a' : '#dc2626',
-                            fontWeight: 600, border: '0.5px solid #f0f0f0'
-                          }}>
+                          <td key={m} style={{ padding: '5px 4px', textAlign: 'center', background: paid ? '#dcfce7' : '#fee2e2', color: paid ? '#16a34a' : '#dc2626', fontWeight: 600, border: '0.5px solid #f0f0f0' }}>
                             {paid ? '✓' : '✗'}
                           </td>
                         )
@@ -208,46 +193,28 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Parking Matrix */}
           <div className="bg-white rounded-2xl p-4" style={{ border: '0.5px solid #e0e0e0' }}>
             <div className="text-sm font-medium text-gray-600 mb-3">Parking Slots Matrix</div>
             <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
               <table style={{ borderCollapse: 'collapse', fontSize: 11 }}>
                 <thead>
                   <tr>
-                    <th style={{
-                      padding: '6px 10px', background: '#764ba2', color: 'white',
-                      minWidth: 48, textAlign: 'center'
-                    }}>Slot</th>
+                    <th style={{ padding: '6px 10px', background: '#764ba2', color: 'white', minWidth: 48, textAlign: 'center' }}>Slot</th>
                     {allMonths.map(m => (
-                      <th key={m} style={{
-                        padding: '6px 8px', background: '#667eea', color: 'white',
-                        minWidth: 70, textAlign: 'center', whiteSpace: 'nowrap'
-                      }}>{m}</th>
+                      <th key={m} style={{ padding: '6px 8px', background: '#667eea', color: 'white', minWidth: 70, textAlign: 'center', whiteSpace: 'nowrap' }}>{m}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {Array.from({ length: parkingSlots }, (_, i) => (
                     <tr key={i} style={{ background: i % 2 === 0 ? 'white' : '#fafafa' }}>
-                      <td style={{
-                        padding: '5px 10px', fontWeight: 600, textAlign: 'center',
-                        borderRight: '0.5px solid #e0e0e0', color: '#888'
-                      }}>{i + 1}</td>
+                      <td style={{ padding: '5px 10px', fontWeight: 600, textAlign: 'center', borderRight: '0.5px solid #e0e0e0', color: '#888' }}>{i + 1}</td>
                       {allMonths.map(m => {
-                        const slots = getParkingSlots(m)
-                        const unit = slots[i]
+                        const unit = getParkingSlots(m)[i]
                         return (
-                          <td key={m} style={{
-                            padding: '5px 6px', textAlign: 'center',
-                            border: '0.5px solid #f0f0f0'
-                          }}>
+                          <td key={m} style={{ padding: '5px 6px', textAlign: 'center', border: '0.5px solid #f0f0f0' }}>
                             {unit
-                              ? <span style={{
-                                  background: '#dcfce7', color: '#16a34a',
-                                  fontWeight: 600, borderRadius: 6,
-                                  padding: '2px 8px', fontSize: 11
-                                }}>Unit {unit}</span>
+                              ? <span style={{ background: '#dcfce7', color: '#16a34a', fontWeight: 600, borderRadius: 6, padding: '2px 8px', fontSize: 11 }}>Unit {unit}</span>
                               : <span style={{ color: '#ccc' }}>—</span>
                             }
                           </td>
@@ -259,11 +226,8 @@ export default function Dashboard() {
               </table>
             </div>
           </div>
-
         </div>
       )}
-
-      {/* Transactions Tab */}
     </div>
   )
 }

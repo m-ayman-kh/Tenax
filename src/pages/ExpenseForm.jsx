@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
+import { useState } from 'react'
+import { sql } from '../lib/db'
 import { useAuth } from '../context/AuthContext'
 import { compressImage } from '../lib/compress'
 
@@ -19,6 +19,13 @@ function monthLabel(dateStr) {
   return MONTHS[d.getMonth()] + '-' + String(d.getFullYear()).slice(-2)
 }
 
+// File upload stubbed — R2 integration coming in Phase 4
+async function uploadFile(file, buildingName) {
+  // TODO: upload to Cloudflare R2 via Cloudflare Worker
+  console.warn('File upload not yet implemented (Phase 4 — R2)', file.name)
+  return null
+}
+
 export default function ExpenseForm() {
   const { profile, building } = useAuth()
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
@@ -32,11 +39,11 @@ export default function ExpenseForm() {
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
 
-  const buildingMonths = building?.config?.months || 
+  const buildingMonths = building?.config?.months ||
     Array.from({length: 12}, (_, i) => `2026-${String(i+1).padStart(2,'0')}-01`)
 
   function toggleMonth(m) {
-    setSelectedMonths(prev => 
+    setSelectedMonths(prev =>
       prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m]
     )
   }
@@ -46,27 +53,6 @@ export default function ExpenseForm() {
     const valid = newFiles.filter(f => f.size <= 10 * 1024 * 1024)
     if (valid.length < newFiles.length) alert('Some files exceed 10MB and were skipped')
     setFiles(prev => [...prev, ...valid].slice(0, 10))
-  }
-
-  async function uploadFile(file) {
-    const compressed = await compressImage(file)
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onloadend = async () => {
-        const base64 = reader.result.split(',')[1]
-        const { data, error } = await supabase.functions.invoke('upload-to-drive', {
-          body: {
-            fileName: file.name,
-            fileType: file.type,
-            fileData: base64,
-            folder: `PropertyFlow/${building?.name || 'Attachments'}`
-          }
-        })
-        if (error || !data.success) reject(error || data.error)
-        else resolve(data.url)
-      }
-      reader.readAsDataURL(file)
-    })
   }
 
   async function handleSubmit() {
@@ -80,32 +66,28 @@ export default function ExpenseForm() {
     setError('')
 
     try {
+      // File upload stubbed — Phase 4 (R2)
       let attachmentUrls = []
       if (files.length > 0) {
-        const uploads = await Promise.all(files.map(uploadFile))
-        attachmentUrls = uploads
+        const uploads = await Promise.all(files.map(f => uploadFile(f, building?.name)))
+        attachmentUrls = uploads.filter(Boolean)
       }
 
       const amountPerMonth = parseFloat(amount) / selectedMonths.length
 
-      const rows = selectedMonths.map(month => ({
-        building_id: profile.building_id,
-        type: 'Expense',
-        date,
-        category,
-        sub_category: subCategory,
-        month,
-        amount: -amountPerMonth,
-        notes,
-        attachment_urls: attachmentUrls,
-        created_by: profile.id
-      }))
-
-      const { error: insertError } = await supabase.from('transactions').insert(rows)
-      if (insertError) throw insertError
+      for (const month of selectedMonths) {
+        await sql`
+          INSERT INTO transactions
+            (building_id, type, date, category, sub_category, month, amount, notes, attachment_urls, created_by)
+          VALUES
+            (${profile.building_id}, 'Expense', ${date}, ${category}, ${subCategory},
+             ${month}, ${-amountPerMonth}, ${notes}, ${JSON.stringify(attachmentUrls)}, ${profile.id})
+        `
+      }
 
       setSuccess(true)
     } catch (err) {
+      console.error(err)
       setError(err.message || 'Something went wrong')
     }
 
@@ -220,12 +202,12 @@ export default function ExpenseForm() {
       {/* Attachments */}
       <div className="space-y-2">
         <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-          Attachments (optional, max 10 files)
+          Attachments (optional, max 10 files) — upload coming in Phase 4
         </label>
         <div onClick={() => document.getElementById('expenseFiles').click()}
           className="border-2 border-dashed border-gray-200 rounded-xl p-5 text-center cursor-pointer">
           <div className="text-2xl mb-1">📎</div>
-          <div className="text-xs text-gray-400">Tap to upload</div>
+          <div className="text-xs text-gray-400">Tap to attach</div>
           <input id="expenseFiles" type="file" multiple accept="image/*,.pdf,.doc,.docx"
             className="hidden" onChange={handleFiles} />
         </div>

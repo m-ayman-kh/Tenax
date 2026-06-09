@@ -1,5 +1,5 @@
 {
-  "name": "propertyflow",
+  "name": "tenax",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,7 +10,8 @@
     "deploy": "vite build && gh-pages -d dist"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.103.0",
+    "@clerk/clerk-react": "^5.61.8",
+    "@neondatabase/serverless": "^1.1.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.14.1",
@@ -26,7 +27,8 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "gh-pages": "^6.3.0",
-    "globals": "^17.4.0",
+    "globals": "^17.0.0",
+    "pg": "^8.21.0",
     "tailwindcss": "^4.2.2",
     "vite": "^8.0.4"
   }

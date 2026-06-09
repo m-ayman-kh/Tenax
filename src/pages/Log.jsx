@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
+import { sql } from '../lib/db'
 import { useAuth } from '../context/AuthContext'
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
@@ -48,14 +48,13 @@ export default function Log() {
     const threeMonthsAgo = new Date()
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
 
-    const { data, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('building_id', profile.building_id)
-      .gte('month', threeMonthsAgo.toISOString().split('T')[0])
-      .order('date', { ascending: false })
-
-    if (!error) setTransactions(data || [])
+    const rows = await sql`
+      SELECT * FROM transactions
+      WHERE building_id = ${profile.building_id}
+        AND month >= ${threeMonthsAgo.toISOString().split('T')[0]}
+      ORDER BY date DESC
+    `
+    setTransactions(rows)
     setLoading(false)
   }
 

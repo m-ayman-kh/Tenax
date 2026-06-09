@@ -1,108 +1,128 @@
--- >>> TABLES CREATION
--- Global default categories
-create table categories (
-  id uuid primary key default gen_random_uuid(),
-  type text check (type in ('Revenue', 'Expense')) not null,
-  name text not null,
-  sub_categories text[],
-  is_default boolean default true,
-  created_at timestamptz default now()
-);
+-- Tenax Database Schema
+-- Run this once in your Neon SQL Editor
 
 -- Buildings
-create table buildings (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  slug text unique not null,
-  config jsonb not null default '{
-    "language": "en",
-    "beginning_balance": 50000,
-    "total_units": 20,
-    "currency": "EGP",
-    "expense_categories": null,
-    "revenue_categories": null
-  }'::jsonb,
-  created_at timestamptz default now()
+CREATE TABLE IF NOT EXISTS buildings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  name_ar TEXT,
+  type TEXT NOT NULL DEFAULT 'mixed' CHECK (type IN ('residential','commercial','mixed')),
+  config JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Building months (each building manages its own)
-create table building_months (
-  id uuid primary key default gen_random_uuid(),
-  building_id uuid references buildings(id) on delete cascade not null,
-  month date not null,
-  label text not null,
-  is_active boolean default true,
-  created_at timestamptz default now(),
-  unique(building_id, month)
+-- Units
+CREATE TABLE IF NOT EXISTS units (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  building_id UUID NOT NULL REFERENCES buildings(id) ON DELETE CASCADE,
+  unit_number TEXT NOT NULL,
+  type TEXT NOT NULL DEFAULT 'apartment' CHECK (type IN ('apartment','shop','office','parking')),
+  floor INTEGER,
+  monthly_rate NUMERIC(12,2) DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Profiles
-create table profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
-  full_name text,
-  building_id uuid references buildings(id),
-  role text check (role in ('bookkeeper', 'tenant')),
-  unit_number text,
-  created_at timestamptz default now()
+-- Profiles (linked to Clerk user IDs)
+CREATE TABLE IF NOT EXISTS profiles (
+  id TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  full_name TEXT,
+  full_name_ar TEXT,
+  role TEXT NOT NULL DEFAULT 'tenant' CHECK (role IN ('super_admin','president','vice_president','treasurer','tenant')),
+  building_id UUID REFERENCES buildings(id) ON DELETE SET NULL,
+  unit_id UUID REFERENCES units(id) ON DELETE SET NULL,
+  preferred_lang TEXT DEFAULT 'en' CHECK (preferred_lang IN ('en','ar')),
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Transactions
-create table transactions (
-  id uuid primary key default gen_random_uuid(),
-  building_id uuid references buildings(id) not null,
-  type text check (type in ('Revenue', 'Expense')) not null,
-  date date not null,
-  category text not null,
-  sub_category text,
-  month date not null,
-  tenant_unit text,
-  amount numeric not null,
-  notes text,
-  attachment_urls text[],
-  created_by uuid references auth.users(id),
-  created_at timestamptz default now()
+-- Transaction categories (customizable per building)
+CREATE TABLE IF NOT EXISTS transaction_categories (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  building_id UUID REFERENCES buildings(id) ON DELETE CASCADE,
+  type TEXT NOT NULL CHECK (type IN ('Revenue','Expense')),
+  name_en TEXT NOT NULL,
+  name_ar TEXT,
+  is_default BOOLEAN DEFAULT false,
+  created_by TEXT REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Join requests
-create table join_requests (
-  id uuid primary key default gen_random_uuid(),
-  building_id uuid references buildings(id) not null,
-  email text not null,
-  unit_number text,
-  message text,
-  status text default 'pending' check (status in ('pending', 'approved', 'rejected')),
-  created_at timestamptz default now()
+-- Transactions (Treasurer only)
+CREATE TABLE IF NOT EXISTS transactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  building_id UUID NOT NULL REFERENCES buildings(id) ON DELETE CASCADE,
+  unit_id UUID REFERENCES units(id) ON DELETE SET NULL,
+  type TEXT NOT NULL CHECK (type IN ('Revenue','Expense')),
+  category_id UUID REFERENCES transaction_categories(id) ON DELETE SET NULL,
+  amount NUMERIC(12,2) NOT NULL,
+  month DATE NOT NULL,
+  date DATE NOT NULL DEFAULT CURRENT_DATE,
+  notes TEXT,
+  receipt_url TEXT,
+  created_by TEXT NOT NULL REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Insert global default categories
-insert into categories (type, name, sub_categories) values
-('Expense', 'Maintenance', array['Plumber','Painting','Electrical','HVAC','Cleaning','Security','Other']),
-('Expense', 'Innovation', array['Landscape','Entrance','Lighting','Parking','Gym','Pool','Other']),
-('Expense', 'Utilities', array['Water','Electricity','Gas','Internet','Waste','Other']),
-('Expense', 'Insurance', array['Property','Liability','Other']),
-('Expense', 'Taxes', array['Property Tax','Income Tax','Other']),
-('Expense', 'Administrative', array['Legal','Accounting','Management','Other']),
-('Revenue', 'Rent', null),
-('Revenue', 'Parking', null),
-('Revenue', 'Laundry', null),
-('Revenue', 'Storage', null),
-('Revenue', 'Late Fees', null),
-('Revenue', 'Security Deposit', null),
-('Revenue', 'Monthly Debt', null),
-('Revenue', 'Other', null);
-
-
-
--- >>> CATEGORY CREATION
-insert into buildings (name, slug, config) values (
-  'd4b1',
-  '1b',
-  '{
-    "language": "ar",
-    "beginning_balance": 50000,
-    "total_units": 20,
-    "currency": "EGP",
-    "expense_categories": null,
-    "revenue_categories": null
-  }'::jsonb
+-- Announcements
+CREATE TABLE IF NOT EXISTS announcements (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  building_id UUID NOT NULL REFERENCES buildings(id) ON DELETE CASCADE,
+  author_id TEXT NOT NULL REFERENCES profiles(id),
+  title_en TEXT,
+  title_ar TEXT,
+  body_en TEXT,
+  body_ar TEXT,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+  reviewed_by TEXT REFERENCES profiles(id),
+  review_note TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  published_at TIMESTAMPTZ
 );
+
+-- Polls
+CREATE TABLE IF NOT EXISTS polls (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  building_id UUID NOT NULL REFERENCES buildings(id) ON DELETE CASCADE,
+  created_by TEXT NOT NULL REFERENCES profiles(id),
+  question_en TEXT,
+  question_ar TEXT,
+  options JSONB NOT NULL DEFAULT '[]'::jsonb,
+  closes_at TIMESTAMPTZ,
+  show_live_results BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Poll votes
+CREATE TABLE IF NOT EXISTS poll_votes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  poll_id UUID NOT NULL REFERENCES polls(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES profiles(id),
+  selected_option INTEGER NOT NULL,
+  voted_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(poll_id, user_id)
+);
+
+-- Notification settings per building
+CREATE TABLE IF NOT EXISTS notification_settings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  building_id UUID NOT NULL UNIQUE REFERENCES buildings(id) ON DELETE CASCADE,
+  reminder_day INTEGER DEFAULT 5 CHECK (reminder_day BETWEEN 1 AND 28),
+  grace_days INTEGER DEFAULT 10,
+  message_en TEXT DEFAULT 'Your monthly maintenance is due. Please contact the treasurer.',
+  message_ar TEXT DEFAULT 'موعد سداد الصيانة الشهرية. يرجى التواصل مع أمين الصندوق.',
+  updated_by TEXT REFERENCES profiles(id),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Default transaction categories (shared across all buildings)
+INSERT INTO transaction_categories (building_id, type, name_en, name_ar, is_default) VALUES
+  (NULL, 'Revenue', 'Monthly Maintenance', 'صيانة شهرية', true),
+  (NULL, 'Revenue', 'Parking', 'موقف سيارات', true),
+  (NULL, 'Revenue', 'Commercial Rent', 'إيجار تجاري', true),
+  (NULL, 'Revenue', 'Other', 'أخرى', true),
+  (NULL, 'Expense', 'Maintenance', 'صيانة', true),
+  (NULL, 'Expense', 'Utilities', 'مرافق', true),
+  (NULL, 'Expense', 'Security', 'أمن', true),
+  (NULL, 'Expense', 'Cleaning', 'نظافة', true),
+  (NULL, 'Expense', 'Other', 'أخرى', true)
+ON CONFLICT DO NOTHING;

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { supabase } from '../lib/supabase'
+import { sql } from '../lib/db'
 
 const icons = {
   dashboard: (active) => (
@@ -35,7 +35,7 @@ const icons = {
 }
 
 export default function Layout() {
-  const { profile, building, signOut } = useAuth()
+  const { user, profile, building, signOut, isSuperAdmin, canManageFinances } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [navVisible, setNavVisible] = useState(true)
@@ -44,21 +44,21 @@ export default function Layout() {
   const lastScrollY = useRef(0)
 
   useEffect(() => {
-    if (profile?.is_super_admin) fetchBuildings()
-  }, [profile])
+    if (isSuperAdmin) fetchBuildings()
+  }, [isSuperAdmin])
 
   useEffect(() => {
     if (building) setSelectedBuilding(building.id)
   }, [building])
 
   async function fetchBuildings() {
-    const { data } = await supabase.from('buildings').select('id, name')
-    if (data) setBuildings(data)
+    const rows = await sql`SELECT id, name FROM buildings ORDER BY name`
+    setBuildings(rows)
   }
 
   async function switchBuilding(buildingId) {
     setSelectedBuilding(buildingId)
-    await supabase.from('profiles').update({ building_id: buildingId }).eq('id', profile.id)
+    await sql`UPDATE profiles SET building_id = ${buildingId} WHERE id = ${profile.id}`
     window.location.reload()
   }
 
@@ -74,23 +74,25 @@ export default function Layout() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const role = profile?.role
   const tabs = [
     { path: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
     { path: '/log', label: 'Log', icon: 'log' },
-    { path: '/expense', label: 'Expense', icon: 'expense', restricted: true },
-    { path: '/revenue', label: 'Revenue', icon: 'revenue', restricted: true },
+    { path: '/expense', label: 'Expense', icon: 'expense', financeOnly: true },
+    { path: '/revenue', label: 'Revenue', icon: 'revenue', financeOnly: true },
     { path: '/admin', label: 'Admin', icon: 'admin', superAdminOnly: true },
   ]
 
+  const displayName = profile?.full_name || user?.firstName || user?.emailAddresses?.[0]?.emailAddress || ''
+
   return (
     <div className="min-h-screen pb-16" style={{ background: '#f5f5f5' }}>
+      {/* Header */}
       <div className="sticky top-0 z-50 px-4 py-3"
         style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
         <div className="flex justify-between items-center">
-          <span className="text-white font-semibold text-base">🏢 PropertyFlow</span>
+          <span className="text-white font-semibold text-base">🏢 Tenax</span>
           <div className="text-right">
-            {profile?.is_super_admin && buildings.length > 0 ? (
+            {isSuperAdmin && buildings.length > 0 ? (
               <select
                 value={selectedBuilding || ''}
                 onChange={e => switchBuilding(e.target.value)}
@@ -103,7 +105,7 @@ export default function Layout() {
             ) : (
               <div className="text-white text-xs opacity-90">{building?.name}</div>
             )}
-            <div className="text-white text-xs opacity-70 capitalize mt-0.5">{profile?.full_name}</div>
+            <div className="text-white text-xs opacity-70 capitalize mt-0.5">{displayName}</div>
           </div>
         </div>
       </div>
@@ -112,6 +114,7 @@ export default function Layout() {
         <Outlet />
       </div>
 
+      {/* Bottom nav */}
       <nav
         className="fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300"
         style={{
@@ -121,15 +124,14 @@ export default function Layout() {
         }}>
         <div className="flex justify-around items-center py-2 max-w-2xl mx-auto">
           {tabs.map(tab => {
-            if (tab.superAdminOnly && !profile?.is_super_admin) return null
+            if (tab.superAdminOnly && !isSuperAdmin) return null
+            if (tab.financeOnly && !canManageFinances) return null
             const isActive = location.pathname === tab.path
-            const isLocked = tab.restricted && role === 'tenant'
             return (
               <button
                 key={tab.path}
-                onClick={() => !isLocked && navigate(tab.path)}
-                className="flex flex-col items-center gap-1 px-4 py-1 rounded-xl transition-all"
-                style={{ opacity: isLocked ? 0.35 : 1 }}>
+                onClick={() => navigate(tab.path)}
+                className="flex flex-col items-center gap-1 px-4 py-1 rounded-xl transition-all">
                 <div className="w-8 h-8 flex items-center justify-center rounded-lg"
                   style={{ background: isActive ? '#eeedfe' : 'transparent' }}>
                   {icons[tab.icon](isActive)}

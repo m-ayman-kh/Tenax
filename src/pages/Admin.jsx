@@ -1,78 +1,54 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
+import { sql } from '../lib/db'
 import { useAuth } from '../context/AuthContext'
 
-const TABS = ['Join Requests', 'Users', 'Buildings']
+const HOA_ROLES = ['super_admin','president','vice_president','treasurer','tenant']
+const TABS = ['Users', 'Buildings']
 
 export default function Admin() {
-  const { profile } = useAuth()
-  const [tab, setTab] = useState('Join Requests')
-  const [requests, setRequests] = useState([])
+  const { profile, isSuperAdmin } = useAuth()
+  const [tab, setTab] = useState('Users')
   const [users, setUsers] = useState([])
   const [buildings, setBuildings] = useState([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
 
   useEffect(() => {
-    if (!profile?.is_super_admin) return
+    if (!isSuperAdmin) return
     fetchAll()
-  }, [profile])
+  }, [isSuperAdmin])
 
   async function fetchAll() {
     setLoading(true)
-    const [reqRes, usersRes, bldRes] = await Promise.all([
-      supabase.from('join_requests').select('*, buildings(name)').order('created_at', { ascending: false }),
-      supabase.from('profiles').select('*, buildings(name)').order('created_at', { ascending: false }),
-      supabase.from('buildings').select('*').order('created_at', { ascending: false })
+    const [usersRows, buildingsRows] = await Promise.all([
+      sql`
+        SELECT p.*, b.name AS building_name
+        FROM profiles p
+        LEFT JOIN buildings b ON b.id = p.building_id
+        ORDER BY p.created_at DESC
+      `,
+      sql`SELECT * FROM buildings ORDER BY created_at DESC`
     ])
-    if (reqRes.data) setRequests(reqRes.data)
-    if (usersRes.data) setUsers(usersRes.data)
-    if (bldRes.data) setBuildings(bldRes.data)
+    setUsers(usersRows)
+    setBuildings(buildingsRows)
     setLoading(false)
   }
 
-  async function approveRequest(req) {
-    const buildingId = prompt('Building ID for this user?', req.building_id || '')
-    const role = prompt('Role? (bookkeeper or tenant)', 'tenant')
-    if (!buildingId || !role) return
-
-    const { error } = await supabase.functions.invoke('invite-user', {
-      body: {
-        email: req.email,
-        buildingId,
-        role,
-        unitNumber: req.unit_number
-      }
-    })
-
-    if (error) return showMessage('Error: ' + error.message)
-
-    await supabase.from('join_requests').update({ status: 'approved' }).eq('id', req.id)
-    showMessage('Invite sent to ' + req.email)
-    fetchAll()
-  }
-
-  async function rejectRequest(id) {
-    await supabase.from('join_requests').update({ status: 'rejected' }).eq('id', id)
-    showMessage('Request rejected')
-    fetchAll()
-  }
-
   async function updateUserRole(userId, role) {
-    await supabase.from('profiles').update({ role }).eq('id', userId)
+    await sql`UPDATE profiles SET role = ${role} WHERE id = ${userId}`
     showMessage('Role updated')
     fetchAll()
   }
 
   async function updateUserBuilding(userId, buildingId) {
-    await supabase.from('profiles').update({ building_id: buildingId }).eq('id', userId)
+    await sql`UPDATE profiles SET building_id = ${buildingId || null} WHERE id = ${userId}`
     showMessage('Building updated')
     fetchAll()
   }
 
   async function removeUser(userId) {
-    if (!confirm('Remove this user?')) return
-    await supabase.from('profiles').delete().eq('id', userId)
+    if (!confirm('Remove this user from the app? Their Clerk account will not be deleted.')) return
+    await sql`DELETE FROM profiles WHERE id = ${userId}`
     showMessage('User removed')
     fetchAll()
   }
@@ -81,18 +57,16 @@ export default function Admin() {
     const name = prompt('Building name?')
     if (!name) return
     const slug = name.toLowerCase().replace(/\s+/g, '-')
-    await supabase.from('buildings').insert({
-      name,
-      slug,
-      config: {
+    await sql`
+      INSERT INTO buildings (name, slug, config)
+      VALUES (${name}, ${slug}, ${{
         language: 'en',
         beginning_balance: 50000,
         total_units: 20,
-        currency: 'EGP',
-        expense_categories: null,
-        revenue_categories: null
-      }
-    })
+        parking_slots: 5,
+        currency: 'EGP'
+      }})
+    `
     showMessage('Building added')
     fetchAll()
   }
@@ -100,7 +74,7 @@ export default function Admin() {
   async function updateBuildingConfig(id, field, value) {
     const building = buildings.find(b => b.id === id)
     const newConfig = { ...building.config, [field]: value }
-    await supabase.from('buildings').update({ config: newConfig }).eq('id', id)
+    await sql`UPDATE buildings SET config = ${newConfig} WHERE id = ${id}`
     showMessage('Building updated')
     fetchAll()
   }
@@ -110,7 +84,7 @@ export default function Admin() {
     setTimeout(() => setMessage(''), 3000)
   }
 
-  if (!profile?.is_super_admin) return (
+  if (!isSuperAdmin) return (
     <div className="p-10 text-center text-gray-400">Access denied</div>
   )
 
@@ -120,7 +94,7 @@ export default function Admin() {
 
   return (
     <div className="p-4 space-y-4">
-      <h1 className="text-xl font-semibold text-center pt-2" style={{ color: '#667eea' }}>⚙ Admin Panel</h1>
+      <h1 className="text-xl font-semibold text-center pt-2" style={{ color: '#667eea' }}>⚙️ Admin Panel</h1>
 
       {message && (
         <div className="text-center text-sm py-2 px-4 rounded-xl"
@@ -143,60 +117,18 @@ export default function Admin() {
         ))}
       </div>
 
-      {/* Join Requests */}
-      {tab === 'Join Requests' && (
-        <div className="space-y-3">
-          {requests.length === 0 && (
-            <div className="text-center text-gray-400 py-10">No join requests</div>
-          )}
-          {requests.map(req => (
-            <div key={req.id} className="bg-white rounded-2xl p-4 space-y-2"
-              style={{ border: '0.5px solid #e0e0e0' }}>
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="font-medium text-sm text-gray-800">{req.email}</div>
-                  <div className="text-xs text-gray-400">
-                    Unit {req.unit_number} · {req.buildings?.name}
-                  </div>
-                  {req.message && <div className="text-xs text-gray-500 mt-1">"{req.message}"</div>}
-                </div>
-                <span className="text-xs px-2 py-1 rounded-lg"
-                  style={{
-                    background: req.status === 'pending' ? '#fef3c7' : req.status === 'approved' ? '#d1fae5' : '#fee2e2',
-                    color: req.status === 'pending' ? '#92400e' : req.status === 'approved' ? '#065f46' : '#991b1b'
-                  }}>
-                  {req.status}
-                </span>
-              </div>
-              {req.status === 'pending' && (
-                <div className="flex gap-2 pt-1">
-                  <button onClick={() => approveRequest(req)}
-                    className="flex-1 py-2 rounded-xl text-xs font-medium text-white"
-                    style={{ background: '#22c55e' }}>
-                    Approve & Invite
-                  </button>
-                  <button onClick={() => rejectRequest(req.id)}
-                    className="flex-1 py-2 rounded-xl text-xs font-medium text-white"
-                    style={{ background: '#f5576c' }}>
-                    Reject
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* Users */}
       {tab === 'Users' && (
         <div className="space-y-3">
+          <div className="text-xs text-gray-400 text-center">{users.length} users total</div>
           {users.map(u => (
             <div key={u.id} className="bg-white rounded-2xl p-4 space-y-3"
               style={{ border: '0.5px solid #e0e0e0' }}>
               <div className="flex justify-between items-start">
                 <div>
                   <div className="font-medium text-sm text-gray-800">{u.full_name || 'No name'}</div>
-                  <div className="text-xs text-gray-400">{u.buildings?.name || 'No building'}</div>
+                  <div className="text-xs text-gray-400">{u.building_name || 'No building'}</div>
+                  <div className="text-xs text-gray-300 mt-0.5 font-mono">{u.id.slice(0,16)}…</div>
                 </div>
                 <button onClick={() => removeUser(u.id)}
                   className="text-xs text-red-400 font-medium">Remove</button>
@@ -205,8 +137,9 @@ export default function Admin() {
                 <select value={u.role || ''} onChange={e => updateUserRole(u.id, e.target.value)}
                   className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-xs bg-white">
                   <option value="">No role</option>
-                  <option value="bookkeeper">Bookkeeper</option>
-                  <option value="tenant">Tenant</option>
+                  {HOA_ROLES.map(r => (
+                    <option key={r} value={r}>{r.replace('_', ' ')}</option>
+                  ))}
                 </select>
                 <select value={u.building_id || ''} onChange={e => updateUserBuilding(u.id, e.target.value)}
                   className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-xs bg-white">
@@ -239,6 +172,12 @@ export default function Admin() {
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs" />
                 </div>
                 <div className="space-y-1">
+                  <label className="text-xs text-gray-400">Parking Slots</label>
+                  <input type="number" defaultValue={b.config?.parking_slots}
+                    onBlur={e => updateBuildingConfig(b.id, 'parking_slots', parseInt(e.target.value))}
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs" />
+                </div>
+                <div className="space-y-1">
                   <label className="text-xs text-gray-400">Beginning Balance</label>
                   <input type="number" defaultValue={b.config?.beginning_balance}
                     onBlur={e => updateBuildingConfig(b.id, 'beginning_balance', parseFloat(e.target.value))}
@@ -250,7 +189,7 @@ export default function Admin() {
                     onBlur={e => updateBuildingConfig(b.id, 'currency', e.target.value)}
                     className="w-full px-3 py-2 rounded-xl border border-gray-200 text-xs" />
                 </div>
-                <div className="space-y-1">
+                <div className="space-y-1 col-span-2">
                   <label className="text-xs text-gray-400">Language</label>
                   <select defaultValue={b.config?.language}
                     onChange={e => updateBuildingConfig(b.id, 'language', e.target.value)}
