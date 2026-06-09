@@ -28,7 +28,7 @@ export default function Login() {
       style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
       <div className="bg-white rounded-3xl p-10 w-full max-w-md shadow-2xl text-center">
         <div className="text-6xl mb-5">🏢</div>
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">PropertyFlow</h1>
+        <h1 className="text-2xl font-bold text-gray-800 mb-2">Tenax</h1>
         <p className="text-gray-500 text-sm mb-8">Sign in to your building dashboard</p>
 
         <form onSubmit={handleLogin} className="space-y-4">
@@ -62,7 +62,7 @@ export default function Login() {
 
         <p className="text-gray-400 text-sm mt-6">
           Need access?{' '}
-          <a href="/PropertyFlow/join" className="text-purple-600 font-medium">Request here</a>
+          <a href="/Tenax/join" className="text-purple-600 font-medium">Request here</a>
         </p>
       </div>
     </div>

@@ -1,12 +1,12 @@
-# PropertyFlow — Handoff Document
+# Tenax — Handoff Document
 > Last updated: April 2026 | Stack: React (Vite) + Supabase + GitHub Pages
 
 ---
 
 ## 🚀 Live URLs
-- **App**: https://m-ayman-kh.github.io/PropertyFlow/
-- **Join page**: https://m-ayman-kh.github.io/PropertyFlow/join
-- **GitHub repo**: https://github.com/m-ayman-kh/PropertyFlow
+- **App**: https://m-ayman-kh.github.io/Tenax/
+- **Join page**: https://m-ayman-kh.github.io/Tenax/join
+- **GitHub repo**: https://github.com/m-ayman-kh/Tenax
 - **Supabase project**: https://supabase.com/dashboard/project/fzvukzhxtwmbrcdrhwkx
 
 ---
@@ -224,7 +224,7 @@ const { data, error } = await supabase
 ### Google Drive upload pattern
 ```jsx
 const { data, error } = await supabase.functions.invoke('upload-to-drive', {
-  body: { fileName, fileType, fileData: base64, folder: `PropertyFlow/${building.name}` }
+  body: { fileName, fileType, fileData: base64, folder: `Tenax/${building.name}` }
 })
 // returns { success: true, url: 'https://drive.google.com/...' }
 ```

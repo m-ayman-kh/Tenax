@@ -1,4 +1,4 @@
-# 🏢 PropertyFlow
+# 🏢 Tenax
 
 A modern property management web app built with React, Supabase, and deployed on GitHub Pages.
 

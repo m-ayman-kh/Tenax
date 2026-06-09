@@ -1,8 +1,8 @@
 const CACHE_NAME = 'propertyflow-v1'
 const STATIC_ASSETS = [
-  '/PropertyFlow/',
-  '/PropertyFlow/index.html',
-  '/PropertyFlow/manifest.json',
+  '/Tenax/',
+  '/Tenax/index.html',
+  '/Tenax/manifest.json',
 ]
 
 self.addEventListener('install', event => {
