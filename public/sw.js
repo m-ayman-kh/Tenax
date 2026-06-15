@@ -1,48 +1,20 @@
-const CACHE_NAME = 'propertyflow-v1'
-const STATIC_ASSETS = [
-  '/Tenax/',
-  '/Tenax/index.html',
-  '/Tenax/manifest.json',
-]
+// Cache-busting service worker — clears all old PropertyFlow caches
+const CACHE_NAME = 'tenax-v2'
 
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
-  )
+self.addEventListener('install', () => {
   self.skipWaiting()
 })
 
-self.addEventListener('activate', event => {
+self.addEventListener('activate', async event => {
+  // Delete ALL old caches (including propertyflow-v1 and anything else)
   event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
+      Promise.all(keys.map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
   )
-  self.clients.claim()
 })
 
+// Network-first: never serve stale HTML from cache
 self.addEventListener('fetch', event => {
-  const { request } = event
-  const url = new URL(request.url)
-
-  // Network first for Supabase API calls
-  if (url.hostname.includes('supabase.co')) {
-    event.respondWith(
-      fetch(request).catch(() => caches.match(request))
-    )
-    return
-  }
-
-  // Cache first for static assets
-  event.respondWith(
-    caches.match(request).then(cached => {
-      if (cached) return cached
-      return fetch(request).then(response => {
-        if (!response || response.status !== 200) return response
-        const clone = response.clone()
-        caches.open(CACHE_NAME).then(cache => cache.put(request, clone))
-        return response
-      })
-    })
-  )
+  event.respondWith(fetch(event.request))
 })
