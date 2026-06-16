@@ -1,20 +1,22 @@
-// Cache-busting service worker — clears all old PropertyFlow caches
-const CACHE_NAME = 'tenax-v2'
+const CACHE_NAME = 'tenax-v3'
 
-self.addEventListener('install', () => {
-  self.skipWaiting()
-})
+self.addEventListener('install', () => { self.skipWaiting() })
 
-self.addEventListener('activate', async event => {
-  // Delete ALL old caches (including propertyflow-v1 and anything else)
+self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    caches.keys()
+      .then(keys => Promise.all(keys.map(k => caches.delete(k))))
+      .then(() => self.clients.claim())
   )
 })
 
-// Network-first: never serve stale HTML from cache
+// Navigation requests (index.html): always bypass HTTP cache so users
+// always get the latest deploy without needing to clear browser cache.
+// Asset requests (JS/CSS): normal network — they have content hashes anyway.
 self.addEventListener('fetch', event => {
-  event.respondWith(fetch(event.request))
+  if (event.request.mode === 'navigate') {
+    event.respondWith(fetch(event.request, { cache: 'no-store' }))
+  } else {
+    event.respondWith(fetch(event.request))
+  }
 })
